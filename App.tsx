@@ -4,20 +4,21 @@
  *
  * @format
  */
-import {createStackNavigator} from '@react-navigation/stack';
 import React from 'react';
-import Home from './page/Home';
-import About from './page/About';
 import {NavigationContainer} from '@react-navigation/native';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import About from './page/about';
+import Home from './page/home';
 
-const Stack = createStackNavigator();
+const Stack = createNativeStackNavigator();
+
 function App(): React.JSX.Element {
   return (
     <NavigationContainer>
       <Stack.Navigator
         initialRouteName="Home"
         screenOptions={{
-          headerMode: 'screen',
+          // headerMode: 'screen',
           headerTintColor: 'white',
           headerStyle: {backgroundColor: 'tomato'},
         }}>
