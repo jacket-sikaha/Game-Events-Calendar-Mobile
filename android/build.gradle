@@ -4,12 +4,20 @@ buildscript {
         minSdkVersion = 23
         compileSdkVersion = 34
         targetSdkVersion = 34
-         ndkVersion = "26.1.10909125"
+        ndkVersion = "26.1.10909125"
         kotlinVersion = "1.9.22"
     }
     repositories {
         google()
-        mavenCentral()
+         maven {
+      url 'https://maven.aliyun.com/repository/public/'
+    }
+    maven {
+      url 'https://maven.aliyun.com/repository/central'
+    }
+    mavenLocal()
+    mavenCentral()
+
     }
     dependencies {
         classpath("com.android.tools.build:gradle")
