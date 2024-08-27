@@ -16,7 +16,8 @@ export const generateCalendarGrid = (date: Dayjs | string) => {
   const startM = dayjs(date).startOf('M');
   const endM = dayjs(date).endOf('M');
   const start = startM.subtract(parseInt(startM.format('d')), 'day');
-  const length = 7;
+  const end = endM.add(6 - parseInt(endM.format('d')), 'day');
+  const length = end.diff(start, 'day') + 1;
   const res: string[][] = [];
   const temp: string[] = [];
   Array.from({length}).forEach((_, i) => {
