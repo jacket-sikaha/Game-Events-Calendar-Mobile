@@ -25,7 +25,7 @@ type SectionProps = PropsWithChildren<{
 function Section({children, title}: SectionProps): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
   return (
-    <View style={styles.sectionContainer}>
+    <View className="bg-green-500" style={styles.sectionContainer}>
       <Text className="text-2xl text-purple-500 dark:text-white">{title}</Text>
       <Text
         style={[
@@ -61,6 +61,7 @@ function Home({navigation}): React.JSX.Element {
           title="Go to Profile"
           onPress={() => navigation.navigate('Profile')}
         />
+        <Text className="bg-[#111111]">123</Text>
         <View
           style={{
             backgroundColor: isDarkMode ? Colors.black : Colors.white,
