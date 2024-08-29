@@ -9,6 +9,7 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import About from './page/about';
 import Home from './page/home';
+import Test from './page/test';
 
 const Stack = createNativeStackNavigator();
 
@@ -36,6 +37,7 @@ function App(): React.JSX.Element {
             title: 'About profile',
           }}
         />
+        <Stack.Screen name="Test" component={Test} />
       </Stack.Navigator>
     </NavigationContainer>
   );

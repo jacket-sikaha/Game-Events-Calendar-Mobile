@@ -59,7 +59,7 @@ function Home({navigation}): React.JSX.Element {
         <Header />
         <Button
           title="Go to Profile"
-          onPress={() => navigation.navigate('Profile')}
+          onPress={() => navigation.navigate('Test')}
         />
         <Text className="bg-[#111111]">123</Text>
         <View
