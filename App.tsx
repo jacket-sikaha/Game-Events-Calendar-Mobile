@@ -1,45 +1,43 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-import React from 'react';
+import {createDrawerNavigator} from '@react-navigation/drawer';
 import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import About from './page/about';
-import Home from './page/home';
-import Test from './page/test';
+import React from 'react';
+import {QueryClient, QueryClientProvider} from 'react-query';
+import './gesture-handler.js';
+import {menuList} from './utils/menuData';
+import {Image} from 'react-native';
 
-const Stack = createNativeStackNavigator();
+// react-native-reanimated 3.15.1最新版本貌似有问题，降级3.10目前能运行
+const Drawer = createDrawerNavigator();
+
+// 创建一个 client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App(): React.JSX.Element {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Home"
-        screenOptions={{
-          // headerMode: 'screen',
-          headerTintColor: 'white',
-          headerStyle: {backgroundColor: 'tomato'},
-        }}>
-        <Stack.Screen
-          name="Home"
-          component={Home}
-          options={{
-            title: 'Home app',
-          }}
-        />
-        <Stack.Screen
-          name="Profile"
-          component={About}
-          options={{
-            title: 'About profile',
-          }}
-        />
-        <Stack.Screen name="Test" component={Test} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <QueryClientProvider client={queryClient}>
+      <NavigationContainer>
+        <Drawer.Navigator>
+          {menuList.map(({element, name, icon}, i) => (
+            <Drawer.Screen
+              options={{
+                drawerIcon: ({color, size, focused}) => (
+                  <Image source={{uri: icon}} className="w-8 h-8" />
+                ),
+              }}
+              key={name}
+              name={name}
+              component={element}
+            />
+          ))}
+        </Drawer.Navigator>
+      </NavigationContainer>
+    </QueryClientProvider>
   );
 }
 
