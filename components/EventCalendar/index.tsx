@@ -1,15 +1,15 @@
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import {useEffect, useState} from 'react';
-import type {CalendarProps, CalendarWeekItem} from './CalendarType';
+import {useState} from 'react';
 import {Image, Text, TouchableOpacity, View} from 'react-native';
+import {Col, Row} from 'react-native-flex-grid';
+import type {CalendarProps} from './CalendarType';
 import {
   calculateEventPosition,
   generateCalendar,
   parseDataForGrid,
-} from './utils2';
-import {Row, Col} from 'react-native-flex-grid';
+} from './utils';
 
 dayjs.extend(isBetween);
 dayjs.extend(isSameOrAfter);
@@ -22,27 +22,23 @@ function EventCalendar({value, activity, style}: CalendarProps) {
   const dataWithPosition = calculateEventPosition(currentDate, activity);
   const data = parseDataForGrid(dataWithPosition);
   const maxLevel = Math.max(...dataWithPosition.map(({level}) => level));
-  console.log(
-    'dataWithPosition',
-    dataWithPosition.map(({width, left, title, start_time, end_time}) => ({
-      width,
-      left,
-      title,
-      a: currentDate.startOf('w').add(1, 'day').diff(start_time, 'day'),
-      b: currentDate.endOf('w').add(1, 'day').diff(end_time, 'day'),
-      start_time,
-      end_time,
-    })),
-  );
+  // console.log(
+  //   'dataWithPosition',
+  //   dataWithPosition.map(({width, left, title, start_time, end_time}) => ({
+  //     width,
+  //     left,
+  //     title,
+  //     a: currentDate.startOf('w').add(1, 'day').diff(start_time, 'day'),
+  //     b: currentDate.endOf('w').add(1, 'day').diff(end_time, 'day'),
+  //     start_time,
+  //     end_time,
+  //   })),
+  // );
   const handleDayChange = (type: boolean) => {
     setCurrentDate(
       type ? currentDate.add(7, 'day') : currentDate.subtract(7, 'day'),
     );
   };
-
-  useEffect(() => {
-    // setEventGridPosition(calculateEventPosition(currentDate, activity));
-  }, [currentDate, activity]);
 
   return (
     <View className="m-2" style={style}>
@@ -60,10 +56,10 @@ function EventCalendar({value, activity, style}: CalendarProps) {
 
       <Row className="flex flex-row justify-between items-center border">
         {generateCalendar(currentDate).map((item, i) => (
-          <Col className="flex items-center">
+          <Col key={item.format('ddd')} className="flex items-center p-1">
             <Text className="text-xs">{item.format('ddd')}</Text>
             <Text
-              className={`p-1 ${item.isSame(dayjs(), 'day') ? 'bg-orange-400 rounded-full' : ''}`}>
+              className={`p-1 aspect-square text-center ${item.isSame(dayjs(), 'day') ? 'bg-orange-400 rounded-full' : ''}`}>
               {item.date()}
             </Text>
           </Col>
@@ -73,11 +69,12 @@ function EventCalendar({value, activity, style}: CalendarProps) {
       {[...data.keys()].map((k, i) => {
         let arr = data.get(i + 1);
         return (
-          <Row>
-            {arr?.map(({width, left, title, color}) => {
+          <Row key={i}>
+            {arr?.map(({id, width, left, title, color}) => {
               return (
                 <Col
-                  className="rounded-lg overflow-hidden border border-cyan-50"
+                  key={id}
+                  className="rounded-lg overflow-hidden border border-cyan-50 h-6"
                   style={{backgroundColor: color}}
                   xs={(width / 7) * 12}
                   xsOffset={(left / 7) * 12}>

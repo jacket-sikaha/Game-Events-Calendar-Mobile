@@ -1,6 +1,11 @@
 import dayjs, {Dayjs} from 'dayjs';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+
 import {CalendarActivity, CalendarWeekItem} from './CalendarType';
-// import classNames from "classnames";
+
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 
 export const rainbowColors = [
   '#fca5a5',
@@ -12,21 +17,11 @@ export const rainbowColors = [
   '#d8b4fe',
 ];
 
-export const generateCalendarGrid = (date: Dayjs | string) => {
-  const startM = dayjs(date).startOf('M');
-  const endM = dayjs(date).endOf('M');
-  const start = startM.subtract(parseInt(startM.format('d')), 'day');
-  const end = endM.add(6 - parseInt(endM.format('d')), 'day');
-  const length = end.diff(start, 'day') + 1;
-  const res: string[][] = [];
-  const temp: string[] = [];
-  Array.from({length}).forEach((_, i) => {
-    temp.push(start.add(i, 'day').format('YYYY-MM-DD'));
+export const generateCalendar = (date: Dayjs | string) => {
+  const startOfW = dayjs(date).startOf('w').add(1, 'day');
+  return Array.from({length: 7}).map((_, i) => {
+    return startOfW.add(i, 'day');
   });
-  for (let i = 0; i < temp.length; i += 7) {
-    res.push(temp.slice(i, i + 7));
-  }
-  return res;
 };
 
 // 层级分配算法
@@ -43,6 +38,7 @@ export const levelAssignment = (events: CalendarActivity[]) => {
   const sortActivity = events.sort((a, b) => {
     return dayjs(a.start_time).isBefore(b.start_time) ? -1 : 1;
   });
+
   return sortActivity.map(item => {
     const {start_time, end_time} = item;
     if (check.length === 0) {
@@ -51,7 +47,7 @@ export const levelAssignment = (events: CalendarActivity[]) => {
     }
     // 遍历层级，是否需要另起一行
     const isNeedNewLine = check.findIndex(endDate => {
-      return dayjs(start_time).isSameOrAfter(endDate);
+      return dayjs(start_time).diff(endDate, 'day') === 1;
     });
     if (isNeedNewLine === -1) {
       // 没有超过任一层级的最新的活动结束日期，就需要新建一行
@@ -68,44 +64,35 @@ export const levelAssignment = (events: CalendarActivity[]) => {
 export const calculateEventPosition = (
   date: Dayjs | string,
   events: CalendarActivity[],
-): CalendarWeekItem[][] => {
-  const res = [];
-  const temp = generateCalendarGrid(date);
+): CalendarWeekItem[] => {
   const eventsWithLevel = levelAssignment(events);
   // 一个活动对应一种颜色 尽量区分开
   const colorMap = new Map<number, string>(
     events.map((item, i) => [item.id, rainbowColors[i % rainbowColors.length]]),
   );
-
-  for (let i = 0; i < temp.length; i++) {
-    const week = temp[i];
-    const thisWeekEvents = [];
-    for (let j = 0; j < eventsWithLevel.length; j++) {
-      const {start_time, end_time} = eventsWithLevel[j];
-      // 控制日程在这一周的显示起始位置 left 和结束位置 width
-      let left = 0;
-      let width = 0;
-      week.forEach(day => {
-        // 判断这周的第 n 天是否在当前日程的起始和结束时间内
-        if (dayjs(day).isBetween(start_time, end_time, 'day', '[]')) {
-          width++;
-        }
-        // 不在就向左偏移一格，空出这一天
-        if (width === 0) {
-          left++;
-        }
-      });
-      width > 0 &&
-        thisWeekEvents.push({
-          ...eventsWithLevel[j],
-          left,
-          width,
-          color: colorMap.get(eventsWithLevel[j].id) as string,
-        });
-    }
-    res.push(thisWeekEvents);
-  }
-  return res;
+  // startOf/endOf("w") 是以周日开始，周六为结束
+  const startOfW = dayjs(date).startOf('w').add(1, 'day');
+  const endOfW = dayjs(date).endOf('w').add(1, 'day');
+  return eventsWithLevel
+    .map(obj => {
+      // diff 正数意味着前者比后者晚发生，负数则反过来
+      const {start_time, end_time} = obj;
+      let startDiff = startOfW.diff(start_time, 'day');
+      let endDiff = endOfW.diff(end_time, 'day');
+      // 起始时间比 startOfW 早或一样，那日程左偏移值为0，反之有多少就是多少左偏移值
+      let left = startDiff >= 0 ? 0 : Math.abs(startDiff);
+      // 结束时间比 endOfW 晚或一样，那日程长度为以当前7天与左偏移值相减可得，反之得再减上右偏移值得到日程长度
+      let width = endDiff <= 0 ? 7 - left : 7 - left - endDiff;
+      return {
+        ...obj,
+        width,
+        left,
+        grid_row: [obj.level, obj.level + 1],
+        grid_col: [left + 1, left + width + 1],
+        color: colorMap.get(obj.id)!,
+      };
+    })
+    .filter(({width}) => width > 0);
 };
 
 export const parseClassName = (event: CalendarWeekItem): string => {
@@ -142,4 +129,23 @@ export const eventOverviewListSorting = (events: CalendarActivity[]) => {
   }
   events.push(...endEventList);
   return events;
+};
+
+// 由于是第三方库实现的grid布局，功能不太完善，多活动在同一层级情况需要在处理
+// 先做成一个二维数组，索引是层级，将同一层级的活动，按时间顺序构成一个数组
+export const parseDataForGrid = (events: CalendarWeekItem[]) => {
+  const res = new Map<number, CalendarWeekItem[]>();
+  events.forEach(obj => {
+    let level = obj.level;
+    if (res.has(level)) {
+      let tmp = res.get(level)!;
+      let item = tmp.pop()!;
+      obj.left -= item.left + item.width;
+      tmp.push(item);
+      res.set(level, [...tmp, {...obj}]);
+      return;
+    }
+    res.set(level, [{...obj}]);
+  });
+  return res;
 };
